@@ -344,7 +344,7 @@ btnHumanize.addEventListener('click', async () => {
   outputEl.innerHTML = '<span class="cursor"></span>'; currentOutput = '';
   const tone = document.getElementById('tone').value, creativity = document.getElementById('creativity').value, preserve = document.getElementById('preserve').value;
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer YOUR_GROQ_KEY'}, body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:2000, messages:[{role:'system',content:buildPrompt(currentMode,tone,creativity,preserve)},{role:'user',content:text}], stream:true }) });
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer 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'}, body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:2000, messages:[{role:'system',content:buildPrompt(currentMode,tone,creativity,preserve)},{role:'user',content:text}], stream:true }) });
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `API error ${res.status}`); }
     const reader = res.body.getReader(), decoder = new TextDecoder(); let buf = '', outBuf = ''; outputEl.innerHTML = '';
     while (true) {
@@ -383,7 +383,7 @@ btnGenSample.addEventListener('click', async () => {
   const topic = TOPICS[Math.floor(Math.random()*TOPICS.length)];
   detectSampleText.innerHTML='<span class="placeholder">Generating AI text…</span>';
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{ method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer YOUR_GROQ_KEY'}, body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:280, messages:[{role:'system',content:`Write a 3–4 sentence paragraph about the given topic in the most stereotypically AI-generated style possible. Rules: use formal uniform sentences of similar length; use phrases like "it is important to note", "furthermore", "in conclusion", "it is worth mentioning"; use passive voice; avoid contractions; avoid any personality or personal anecdotes. Output ONLY the paragraph with no preamble.`},{role:'user',content:`Topic: ${topic}`}] }) });
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{ method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer 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'}, body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:280, messages:[{role:'system',content:`Write a 3–4 sentence paragraph about the given topic in the most stereotypically AI-generated style possible. Rules: use formal uniform sentences of similar length; use phrases like "it is important to note", "furthermore", "in conclusion", "it is worth mentioning"; use passive voice; avoid contractions; avoid any personality or personal anecdotes. Output ONLY the paragraph with no preamble.`},{role:'user',content:`Topic: ${topic}`}] }) });
     const data = await res.json();
     sampleText = data.choices?.[0]?.message?.content?.trim()||'';
     detectSampleText.textContent = sampleText;
@@ -398,7 +398,7 @@ btnScan.addEventListener('click', async () => {
   detectLoadingBar.classList.add('active');
   scoresContent.innerHTML='<div class="scores-empty">Analyzing signals…</div>';
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{ method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer YOUR_GROQ_KEY'}, body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:350, messages:[{role:'system',content:`You are an AI writing detection analysis engine. Analyze the given text sample for AI-authorship signals using these criteria: sentence length uniformity, burstiness (variance between short and long sentences), vocabulary diversity, repetitive syntactic patterns, use of transitional AI phrases like "furthermore/moreover/it is important to note", passive voice frequency, absence of contractions, and overall naturalness.
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{ method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer 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'}, body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:350, messages:[{role:'system',content:`You are an AI writing detection analysis engine. Analyze the given text sample for AI-authorship signals using these criteria: sentence length uniformity, burstiness (variance between short and long sentences), vocabulary diversity, repetitive syntactic patterns, use of transitional AI phrases like "furthermore/moreover/it is important to note", passive voice frequency, absence of contractions, and overall naturalness.
 
 Based on this analysis, estimate the detection probability score (0-100, representing % likelihood the detector flags it as AI-written) for each of these platforms: GPTZero, ZeroGPT, Quillbot Detector, Copyleaks.
 
