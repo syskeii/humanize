@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HUMANE — AI Text Humanizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #07090e;
+  --panel: rgba(255,255,255,0.035);
+  --panel-hover: rgba(255,255,255,0.06);
+  --border: rgba(255,255,255,0.07);
+  --border-lit: rgba(255,255,255,0.15);
+  --accent: #00e5ff;
+  --accent-glow: rgba(0,229,255,0.15);
+  --accent-dim: rgba(0,229,255,0.08);
+  --green: #00ffa3;
+  --green-dim: rgba(0,255,163,0.1);
+  --text: #dde4f0;
+  --text-muted: rgba(221,228,240,0.45);
+  --text-faint: rgba(221,228,240,0.2);
+  --red: #ff4d6d;
+  --red-dim: rgba(255,77,109,0.1);
+  --yellow: #ffd166;
+  --yellow-dim: rgba(255,209,102,0.1);
+}
+html { font-size: 16px; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Syne', sans-serif; min-height: 100vh; overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0,229,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,255,163,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 60% at 50% 50%, rgba(10,15,30,0.9) 0%, transparent 100%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.4;
+}
+.wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+header { display: flex; align-items: center; justify-content: space-between; padding: 28px 0 48px; animation: fadeDown 0.6s ease both; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-mark { width: 34px; height: 34px; border: 1.5px solid var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--accent); box-shadow: 0 0 14px var(--accent-glow), inset 0 0 8px var(--accent-dim); letter-spacing: -1px; }
+.logo-text { font-size: 18px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.logo-text span { color: var(--accent); }
+.header-badge { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--green); border: 1px solid rgba(0,255,163,0.25); background: var(--green-dim); padding: 5px 12px; border-radius: 20px; letter-spacing: 0.06em; }
+
+.hero { text-align: center; margin-bottom: 52px; animation: fadeUp 0.7s 0.1s ease both; }
+.hero h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px; }
+.hero h1 em { font-style: normal; color: var(--accent); position: relative; }
+.hero h1 em::after { content: ''; position: absolute; bottom: 2px; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.5; }
+.hero p { font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: var(--text-muted); line-height: 1.7; max-width: 520px; margin: 0 auto; }
+
+.modes { display: flex; justify-content: center; gap: 8px; margin-bottom: 36px; animation: fadeUp 0.7s 0.2s ease both; }
+.mode-btn { font-family: 'Syne', sans-serif; font-size: 12.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; background: var(--panel); border: 1px solid var(--border); color: var(--text-muted); padding: 8px 18px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
+.mode-btn:hover { background: var(--panel-hover); color: var(--text); border-color: var(--border-lit); }
+.mode-btn.active { background: var(--accent-dim); border-color: rgba(0,229,255,0.3); color: var(--accent); }
+
+.settings-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; animation: fadeUp 0.7s 0.25s ease both; }
+.setting { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; }
+.setting label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; white-space: nowrap; }
+.setting select { background: transparent; border: none; outline: none; color: var(--accent); font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; cursor: pointer; }
+.setting select option { background: #111520; color: var(--text); }
+
+.editor { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; animation: fadeUp 0.7s 0.3s ease both; }
+@media (max-width: 700px) { .editor { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; backdrop-filter: blur(12px); transition: border-color 0.2s; }
+.panel:focus-within { border-color: var(--border-lit); }
+.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.panel-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+.panel-label.output-label { color: var(--green); }
+.char-count { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); }
+textarea { flex: 1; min-height: 300px; background: transparent; border: none; outline: none; resize: none; padding: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; line-height: 1.75; color: var(--text); caret-color: var(--accent); }
+textarea::placeholder { color: var(--text-faint); font-style: italic; }
+.output-text { flex: 1; min-height: 300px; padding: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; line-height: 1.75; color: var(--text); white-space: pre-wrap; word-break: break-word; overflow-y: auto; }
+.output-placeholder { color: var(--text-faint); font-style: italic; }
+
+.action-bar { display: flex; gap: 12px; align-items: center; animation: fadeUp 0.7s 0.4s ease both; }
+.btn-humanize { flex: 1; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: linear-gradient(135deg, rgba(0,229,255,0.18), rgba(0,229,255,0.08)); border: 1px solid rgba(0,229,255,0.4); color: var(--accent); padding: 16px 32px; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; }
+.btn-humanize::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,229,255,0.1), transparent); opacity: 0; transition: opacity 0.2s; }
+.btn-humanize:hover::before { opacity: 1; }
+.btn-humanize:hover { border-color: var(--accent); box-shadow: 0 0 24px var(--accent-glow); transform: translateY(-1px); }
+.btn-humanize:active { transform: translateY(0); }
+.btn-humanize:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-secondary { font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--panel); border: 1px solid var(--border); color: var(--text-muted); padding: 16px 20px; border-radius: 10px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.btn-secondary:hover { background: var(--panel-hover); border-color: var(--border-lit); color: var(--text); }
+.btn-secondary.copied { color: var(--green); border-color: rgba(0,255,163,0.3); }
+
+.loading-bar { height: 2px; background: linear-gradient(90deg, transparent, var(--accent), var(--green), transparent); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; border-radius: 2px; display: none; }
+.loading-bar.active { display: block; }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+.status { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: center; padding: 10px; border-radius: 8px; margin-top: 16px; display: none; animation: fadeUp 0.3s ease; }
+.status.error { display: block; color: var(--red); background: var(--red-dim); border: 1px solid rgba(255,77,109,0.2); }
+.status.info  { display: block; color: var(--text-muted); background: var(--panel); border: 1px solid var(--border); }
+
+/* ── Detection Tester ── */
+.section-divider { display: flex; align-items: center; gap: 16px; margin: 56px 0 32px; animation: fadeUp 0.7s 0.45s ease both; }
+.section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+.section-divider span { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); white-space: nowrap; }
+
+.detect-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; backdrop-filter: blur(12px); animation: fadeUp 0.7s 0.5s ease both; }
+.detect-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 20px 22px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 16px; }
+.detect-title h3 { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 4px; }
+.detect-title p { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); }
+.detect-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.btn-gen { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; background: var(--accent-dim); border: 1px solid rgba(0,229,255,0.25); color: var(--accent); padding: 9px 16px; border-radius: 7px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.btn-gen:hover { background: rgba(0,229,255,0.15); border-color: rgba(0,229,255,0.45); }
+.btn-gen:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-scan { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; background: var(--red-dim); border: 1px solid rgba(255,77,109,0.2); color: var(--red); padding: 9px 16px; border-radius: 7px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.btn-scan:hover { background: rgba(255,77,109,0.14); border-color: rgba(255,77,109,0.4); }
+.btn-scan:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-use-in { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; background: var(--green-dim); border: 1px solid rgba(0,255,163,0.2); color: var(--green); padding: 9px 16px; border-radius: 7px; cursor: pointer; transition: all 0.2s; white-space: nowrap; display: none; }
+.btn-use-in:hover { background: rgba(0,255,163,0.15); border-color: rgba(0,255,163,0.4); }
+
+.detect-loading-bar { height: 2px; background: linear-gradient(90deg, transparent, var(--red), var(--yellow), transparent); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; border-radius: 2px; display: none; }
+.detect-loading-bar.active { display: block; }
+
+.detect-body { display: grid; grid-template-columns: 1fr 1fr; }
+@media (max-width: 700px) { .detect-body { grid-template-columns: 1fr; } }
+
+.detect-text-area { padding: 20px 22px; border-right: 1px solid var(--border); min-height: 240px; }
+@media (max-width: 700px) { .detect-text-area { border-right: none; border-bottom: 1px solid var(--border); } }
+.detect-text-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 14px; }
+#detectSampleText { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.8; color: var(--text-muted); white-space: pre-wrap; word-break: break-word; }
+#detectSampleText .placeholder { color: var(--text-faint); font-style: italic; }
+
+.detect-scores { padding: 20px 22px; }
+.scores-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 18px; }
+.scores-empty { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-faint); font-style: italic; text-align: center; padding: 48px 0; }
+
+.score-grid { display: flex; flex-direction: column; gap: 16px; }
+.score-item { display: flex; flex-direction: column; gap: 7px; }
+.score-item-top { display: flex; align-items: center; justify-content: space-between; }
+.score-detector { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+.score-detector .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border-lit); flex-shrink: 0; }
+.score-value { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 700; }
+.score-value.high { color: var(--red); }
+.score-value.mid  { color: var(--yellow); }
+.score-value.low  { color: var(--green); }
+.score-bar-track { height: 4px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 4px; transition: width 0.9s cubic-bezier(0.22,1,0.36,1); width: 0%; }
+.score-bar-fill.high { background: linear-gradient(90deg, rgba(255,77,109,0.5), var(--red)); }
+.score-bar-fill.mid  { background: linear-gradient(90deg, rgba(255,209,102,0.5), var(--yellow)); }
+.score-bar-fill.low  { background: linear-gradient(90deg, rgba(0,255,163,0.5), var(--green)); }
+.score-verdict { margin-top: 20px; padding: 12px 16px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.55; display: none; }
+.score-verdict.detected { display: block; color: var(--red); background: var(--red-dim); border: 1px solid rgba(255,77,109,0.2); }
+.score-verdict.clean    { display: block; color: var(--green); background: var(--green-dim); border: 1px solid rgba(0,255,163,0.2); }
+.score-verdict.mixed    { display: block; color: var(--yellow); background: var(--yellow-dim); border: 1px solid rgba(255,209,102,0.2); }
+
+/* ── Tips ── */
+.tips { display: flex; gap: 10px; margin-top: 48px; flex-wrap: wrap; animation: fadeUp 0.7s 0.55s ease both; }
+.tip { flex: 1; min-width: 180px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.tip-icon { font-size: 18px; margin-bottom: 8px; }
+.tip h4 { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 4px; }
+.tip p { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); line-height: 1.6; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.cursor { display: inline-block; width: 2px; height: 1em; background: var(--accent); vertical-align: text-bottom; margin-left: 2px; animation: blink 0.9s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">
+      <div class="logo-mark">H/</div>
+      <div class="logo-text">HU<span>MANE</span></div>
+    </div>
+    <div class="header-badge">✦ Bypass Detection</div>
+  </header>
+
+  <div class="hero">
+    <h1>Make AI text sound<br><em>unmistakably human</em></h1>
+    <p>Rewrites AI-generated content to pass GPTZero, ZeroGPT, Quillbot, Copyleaks and more — without losing meaning.</p>
+  </div>
+
+  <div class="modes">
+    <button class="mode-btn active" data-mode="standard">Standard</button>
+    <button class="mode-btn" data-mode="aggressive">Aggressive</button>
+    <button class="mode-btn" data-mode="academic">Academic</button>
+    <button class="mode-btn" data-mode="casual">Casual</button>
+  </div>
+
+  <div class="settings-row">
+    <div class="setting">
+      <label>TONE</label>
+      <select id="tone">
+        <option value="neutral">Neutral</option>
+        <option value="formal">Formal</option>
+        <option value="conversational">Conversational</option>
+        <option value="persuasive">Persuasive</option>
+      </select>
+    </div>
+    <div class="setting">
+      <label>CREATIVITY</label>
+      <select id="creativity">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="setting">
+      <label>PRESERVE</label>
+      <select id="preserve">
+        <option value="meaning">Meaning only</option>
+        <option value="structure" selected>Structure + meaning</option>
+        <option value="length">Length too</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="editor">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label">AI Text Input</span>
+        <span class="char-count" id="inputCount">0 chars</span>
+      </div>
+      <textarea id="inputText" placeholder="Paste your AI-generated text here…"></textarea>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label output-label">Humanized Output</span>
+        <span class="char-count" id="outputCount">0 chars</span>
+      </div>
+      <div class="loading-bar" id="loadingBar"></div>
+      <div class="output-text" id="outputText">
+        <span class="output-placeholder">Your humanized text will appear here…</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-secondary" id="btnClear">Clear</button>
+    <button class="btn-humanize" id="btnHumanize">⟳ Humanize</button>
+    <button class="btn-secondary" id="btnCopy">Copy</button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <!-- Detection Tester -->
+  <div class="section-divider"><span>⚡ Detection Tester</span></div>
+
+  <div class="detect-panel">
+    <div class="detect-header">
+      <div class="detect-title">
+        <h3>AI Detection Simulator</h3>
+        <p>Generate a sample AI-written paragraph, scan it for detection risk, then send it to the humanizer.</p>
+      </div>
+      <div class="detect-actions">
+        <button class="btn-gen"    id="btnGenSample">⊕ Generate Sample</button>
+        <button class="btn-scan"   id="btnScan" disabled>⚡ Scan Text</button>
+        <button class="btn-use-in" id="btnUseIn">↑ Use in Humanizer</button>
+      </div>
+    </div>
+    <div class="detect-loading-bar" id="detectLoadingBar"></div>
+    <div class="detect-body">
+      <div class="detect-text-area">
+        <div class="detect-text-label">Sample Text</div>
+        <div id="detectSampleText"><span class="placeholder">Click "Generate Sample" to produce a typical AI-written paragraph…</span></div>
+      </div>
+      <div class="detect-scores">
+        <div class="scores-label">Detection Scores</div>
+        <div id="scoresContent"><div class="scores-empty">Run a scan to see results.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tips">
+    <div class="tip"><div class="tip-icon">🎯</div><h4>Perplexity Variance</h4><p>Injects natural burstiness so text passes entropy-based AI detectors.</p></div>
+    <div class="tip"><div class="tip-icon">🔀</div><h4>Sentence Restructuring</h4><p>Reorders clauses and alters syntax patterns that AI models repeat.</p></div>
+    <div class="tip"><div class="tip-icon">✍️</div><h4>Lexical Diversity</h4><p>Swaps AI-preferred words for natural, context-appropriate alternatives.</p></div>
+    <div class="tip"><div class="tip-icon">🧠</div><h4>Tone Authenticity</h4><p>Adds hesitations, contractions and personal voice markers humans use.</p></div>
+  </div>
+
+</div>
+<script>
+/* ── Humanizer ── */
+const inputText   = document.getElementById('inputText');
+const outputEl    = document.getElementById('outputText');
+const btnHumanize = document.getElementById('btnHumanize');
+const btnCopy     = document.getElementById('btnCopy');
+const btnClear    = document.getElementById('btnClear');
+const loadingBar  = document.getElementById('loadingBar');
+const statusEl    = document.getElementById('status');
+const inputCount  = document.getElementById('inputCount');
+const outputCount = document.getElementById('outputCount');
+const modeButtons = document.querySelectorAll('.mode-btn');
+let currentMode = 'standard', currentOutput = '';
+
+modeButtons.forEach(b => b.addEventListener('click', () => {
+  modeButtons.forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); currentMode = b.dataset.mode;
+}));
+inputText.addEventListener('input', () => { inputCount.textContent = inputText.value.length + ' chars'; });
+
+function buildPrompt(mode, tone, creativity, preserve) {
+  const mI = { standard:'Rewrite the following AI-generated text to sound naturally human-written. Your goal is to make it undetectable by AI detectors like GPTZero, ZeroGPT, Quillbot AI Detector, and Copyleaks.', aggressive:'Aggressively rewrite the following AI-generated text. Completely transform sentence structures, vocabulary, and flow so it is impossible for any AI detector to flag. Make it sound like a real, unique human wrote every word from scratch.', academic:`Rewrite the following AI-generated text in a natural academic voice. Sound like a genuine student or researcher — include appropriate hedging language, varied citation-style phrasing, minor stylistic inconsistencies, and authentic scholarly tone that bypasses AI detection tools.`, casual:'Rewrite the following AI-generated text in a casual, natural conversational style. Use contractions, informal phrasing, natural sentence variety, and the kind of loose structure real humans use when writing informally. Must bypass AI detectors.' };
+  const tM = { neutral:'Keep the tone neutral and balanced.', formal:'Maintain a formal, professional tone.', conversational:'Use a conversational, approachable tone.', persuasive:'Use a persuasive, engaging tone.' };
+  const cM = { low:'Make minimal changes — only what is necessary to evade detection.', medium:'Balance originality with fidelity to the source content.', high:'Be highly creative — rephrase freely, restructure heavily, and take creative liberties with wording while preserving meaning.' };
+  const pM = { meaning:'Only preserve the core meaning; feel free to change structure and length.', structure:'Preserve the general structure and meaning of the original.', length:'Preserve the structure, meaning, and approximate length of the original.' };
+  return `${mI[mode]}\nGuidelines:\n- ${tM[tone]}\n- ${cM[creativity]}\n- ${pM[preserve]}\n- Vary sentence length significantly — mix short punchy sentences with longer complex ones.\n- Replace overly uniform AI-typical vocabulary with more diverse natural word choices.\n- Add subtle imperfections: contractions, occasional fragments, rhetorical questions, natural transitions.\n- Avoid starting multiple sentences the same way.\n- Do NOT add commentary or preamble. Output ONLY the rewritten text.`;
+}
+
+btnHumanize.addEventListener('click', async () => {
+  const text = inputText.value.trim();
+  if (!text) { showStatus('Paste some AI-generated text first.', 'error'); return; }
+  if (text.length > 8000) { showStatus('Input too long. Keep it under 8,000 chars.', 'error'); return; }
+  btnHumanize.disabled = true; btnHumanize.textContent = '⟳ Humanizing…';
+  loadingBar.classList.add('active'); hideStatus();
+  outputEl.innerHTML = '<span class="cursor"></span>'; currentOutput = '';
+  const tone = document.getElementById('tone').value, creativity = document.getElementById('creativity').value, preserve = document.getElementById('preserve').value;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', { method:'POST', headers:{'Content-Type':'application/json','x-api-key':'YOUR_API_KEY','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:2000, system: buildPrompt(currentMode,tone,creativity,preserve), messages:[{role:'user',content:text}], stream:true }) });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `API error ${res.status}`); }
+    const reader = res.body.getReader(), decoder = new TextDecoder(); let buf = '', outBuf = ''; outputEl.innerHTML = '';
+    while (true) {
+      const {done,value} = await reader.read(); if (done) break;
+      buf += decoder.decode(value,{stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue; const data = line.slice(6).trim(); if (data==='[DONE]') continue;
+        try { const p = JSON.parse(data); if (p.type==='content_block_delta'&&p.delta?.type==='text_delta') { outBuf += p.delta.text; currentOutput = outBuf; outputEl.textContent = outBuf; outputEl.innerHTML += '<span class="cursor"></span>'; outputCount.textContent = outBuf.length+' chars'; outputEl.scrollTop = outputEl.scrollHeight; } } catch {}
+      }
+    }
+    outputEl.textContent = currentOutput; outputCount.textContent = currentOutput.length+' chars';
+  } catch(err) { outputEl.innerHTML = '<span class="output-placeholder">An error occurred.</span>'; showStatus('Error: '+err.message,'error'); }
+  finally { btnHumanize.disabled=false; btnHumanize.textContent='⟳ Humanize'; loadingBar.classList.remove('active'); }
+});
+btnCopy.addEventListener('click',()=>{ if(!currentOutput)return; navigator.clipboard.writeText(currentOutput).then(()=>{ btnCopy.textContent='✓ Copied'; btnCopy.classList.add('copied'); setTimeout(()=>{ btnCopy.textContent='Copy'; btnCopy.classList.remove('copied'); },2000); }); });
+btnClear.addEventListener('click',()=>{ inputText.value=''; outputEl.innerHTML='<span class="output-placeholder">Your humanized text will appear here…</span>'; inputCount.textContent='0 chars'; outputCount.textContent='0 chars'; currentOutput=''; hideStatus(); });
+function showStatus(msg,type){ statusEl.textContent=msg; statusEl.className='status '+type; }
+function hideStatus(){ statusEl.className='status'; }
+
+/* ── Detection Tester ── */
+const btnGenSample     = document.getElementById('btnGenSample');
+const btnScan          = document.getElementById('btnScan');
+const btnUseIn         = document.getElementById('btnUseIn');
+const detectSampleText = document.getElementById('detectSampleText');
+const scoresContent    = document.getElementById('scoresContent');
+const detectLoadingBar = document.getElementById('detectLoadingBar');
+let sampleText = '';
+
+const TOPICS = ['the impact of social media on mental health','climate change and renewable energy solutions','the future of artificial intelligence in the workplace','the benefits and risks of remote work','how machine learning is transforming healthcare','the role of education in reducing inequality','the ethics of genetic engineering','cryptocurrency and the future of finance','the importance of cybersecurity in modern business','how urbanization affects biodiversity'];
+
+btnGenSample.addEventListener('click', async () => {
+  btnGenSample.disabled=true; btnScan.disabled=true; btnUseIn.style.display='none';
+  detectLoadingBar.classList.add('active');
+  scoresContent.innerHTML='<div class="scores-empty">Run a scan to see results.</div>';
+  const topic = TOPICS[Math.floor(Math.random()*TOPICS.length)];
+  detectSampleText.innerHTML='<span class="placeholder">Generating AI text…</span>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{ method:'POST', headers:{'Content-Type':'application/json','x-api-key':'YOUR_API_KEY','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:280, system:`Write a 3–4 sentence paragraph about the given topic in the most stereotypically AI-generated style possible. Rules: use formal uniform sentences of similar length; use phrases like "it is important to note", "furthermore", "in conclusion", "it is worth mentioning"; use passive voice; avoid contractions; avoid any personality or personal anecdotes. Output ONLY the paragraph with no preamble.`, messages:[{role:'user',content:`Topic: ${topic}`}] }) });
+    const data = await res.json();
+    sampleText = data.content?.[0]?.text?.trim()||'';
+    detectSampleText.textContent = sampleText;
+    btnScan.disabled=false; btnUseIn.style.display='block';
+  } catch { detectSampleText.innerHTML='<span class="placeholder">Error generating sample. Try again.</span>'; }
+  finally { btnGenSample.disabled=false; detectLoadingBar.classList.remove('active'); }
+});
+
+btnScan.addEventListener('click', async () => {
+  if (!sampleText) return;
+  btnScan.disabled=true; btnGenSample.disabled=true;
+  detectLoadingBar.classList.add('active');
+  scoresContent.innerHTML='<div class="scores-empty">Analyzing signals…</div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{ method:'POST', headers:{'Content-Type':'application/json','x-api-key':'YOUR_API_KEY','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:350, system:`You are an AI writing detection analysis engine. Analyze the given text sample for AI-authorship signals using these criteria: sentence length uniformity, burstiness (variance between short and long sentences), vocabulary diversity, repetitive syntactic patterns, use of transitional AI phrases like "furthermore/moreover/it is important to note", passive voice frequency, absence of contractions, and overall naturalness.
+
+Based on this analysis, estimate the detection probability score (0-100, representing % likelihood the detector flags it as AI-written) for each of these platforms: GPTZero, ZeroGPT, Quillbot Detector, Copyleaks.
+
+Return ONLY valid JSON, no markdown fences, no explanation:
+{"gptzero":85,"zerogpt":90,"quillbot":78,"copyleaks":82,"verdict":"detected","reason":"One sentence describing the primary AI signals detected."}
+
+verdict must be exactly one of: detected, mixed, clean`, messages:[{role:'user',content:`Analyze:\n\n${sampleText}`}] }) });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text?.trim()||'{}';
+    let scores; try { scores = JSON.parse(raw); } catch { throw new Error('Parse failed'); }
+    renderScores(scores);
+  } catch(err) { scoresContent.innerHTML=`<div class="scores-empty" style="color:var(--red)">Scan failed: ${err.message}</div>`; }
+  finally { btnScan.disabled=false; btnGenSample.disabled=false; detectLoadingBar.classList.remove('active'); }
+});
+
+function scoreClass(v){ return v>=70?'high':v>=40?'mid':'low'; }
+
+function renderScores(scores){
+  const detectors=[{key:'gptzero',label:'GPTZero'},{key:'zerogpt',label:'ZeroGPT'},{key:'quillbot',label:'Quillbot'},{key:'copyleaks',label:'Copyleaks'}];
+  let html='<div class="score-grid">';
+  for(const d of detectors){
+    const val=Math.min(100,Math.max(0,parseInt(scores[d.key])||0)), cls=scoreClass(val);
+    html+=`<div class="score-item"><div class="score-item-top"><span class="score-detector"><span class="dot"></span>${d.label}</span><span class="score-value ${cls}">${val}% AI</span></div><div class="score-bar-track"><div class="score-bar-fill ${cls}" data-width="${val}" style="width:0%"></div></div></div>`;
+  }
+  html+='</div>';
+  const v=scores.verdict||'mixed', reason=scores.reason||'';
+  const vLabel = v==='detected'?'🚨 Flagged as AI-written':v==='clean'?'✓ Likely passes detection':'⚠ Mixed — some detectors may flag';
+  html+=`<div class="score-verdict ${v}">${vLabel}<br><span style="opacity:0.75">${reason}</span></div>`;
+  scoresContent.innerHTML=html;
+  requestAnimationFrame(()=>{ document.querySelectorAll('.score-bar-fill[data-width]').forEach((bar,i)=>{ setTimeout(()=>{ bar.style.width=bar.dataset.width+'%'; },80+i*60); }); });
+}
+
+btnUseIn.addEventListener('click',()=>{
+  if(!sampleText)return;
+  inputText.value=sampleText; inputCount.textContent=sampleText.length+' chars';
+  inputText.scrollIntoView({behavior:'smooth',block:'center'});
+});
+</script>
+</body>
+</html>
